@@ -78,9 +78,11 @@ function [TPR,FPR,NT,ND] = MovingWindow_AccuracyProfile_MVPA_ECOG(condition, sub
     nchar = 0;
     ps = 0;
     ph = 0;
-    
+
     TPR = zeros(nwindows,nwindows);
     FPR = zeros(nwindows,nwindows);
+    NT = zeros(nwindows,nwindows);
+    ND = zeros(nwindows,nwindows);
     for i = 1:N
         s = subjects(i);
         w = windows(i);
@@ -108,7 +110,8 @@ function [TPR,FPR,NT,ND] = MovingWindow_AccuracyProfile_MVPA_ECOG(condition, sub
             rowfilter = Fz.filter(:);
 
             cvind = zeros(100, 1);
-            for j = 1:size(CV, 2)
+            for j = 1:size(CV, 2) %#ok<NODEF>
+                z = CV(:,1) == j;
                 cvind(z) = j;
             end
 
@@ -135,11 +138,8 @@ function [TPR,FPR,NT,ND] = MovingWindow_AccuracyProfile_MVPA_ECOG(condition, sub
 
             TPR(wi,wj) = nnz( (Y_test==1) & (Yz_test>0) ) ./ nnz((Y_test==1));
             FPR(wi,wj) = nnz( (Y_test~=1) & (Yz_test>0) ) ./ nnz((Y_test~=1));
-            NT(wi,wj) = nnz((Y_test==1)); %#ok<NASGU>
-            ND(wi,wj) = nnz((Y_test~=1)); %#ok<NASGU>
-%             if (wi == wj) && (M(wi,wj) ~= results(wi).err1)
-%                 error('Perfomance computation error!')
-%             end
+            NT(wi,wj) = nnz((Y_test==1));
+            ND(wi,wj) = nnz((Y_test~=1));
         end
         % Windows are the inner loop, so every time we hit the last window
         % it's time to write out a results structure for a given subject

@@ -83,8 +83,12 @@ function [results,fitObj] = MovingWindow_MVPA_ECOG(condition, subjects, holdouts
                 'subject', s, ...
                 'window', num2cell(windows_set), ...
                 'holdout', h, ...
-                'testset', [], 'condition', [], 'C', [], 'Cz', [], ...
-                'err1', [], 'err2', []);
+                'testset', [], 'condition', [], ...
+                'Y',    [], 'Yz',   [], ...
+                'tpr1', [], 'tpr2', [], ...
+                'fpr1', [], 'fpr2', [], ...
+                'nt1',  [], 'nt2',  [], ...
+                'ntd',  [], 'nd2',  []);
             fitObj = repmat(struct( ...
                 'a0', [], ...
                 'label', [], ...
@@ -145,21 +149,22 @@ function [results,fitObj] = MovingWindow_MVPA_ECOG(condition, subjects, holdouts
         X_h = X(trainset, :);
 
         opts_cv = glmnetSet();
-        fitobj_cv = cvglmnet(X_h, Y_h, 'binomial', opts_cv, 'mse', 9, cvind_h, PARALLEL);
+        fitobj_cv = cvglmnet(X_h, Y_h, 'binomial', opts_cv, 'class', 9, cvind_h, PARALLEL);
 
         ii = ii + 1;
         fitObj(ii) = glmnet(X_h, Y_h, 'binomial', glmnetSet(struct('lambda',fitobj_cv.lambda_min)));
+        Yz = glmnetPredict(fitObj(ii), X);
         results(ii).subject = s;
         results(ii).window = w;
         results(ii).holdout = h;
         results(ii).testset = testset;
         results(ii).condition = condition;
         results(ii).Y = Y;
-        results(ii).Yz = glmnetPredict(fitObj(ii), X);
-        results(ii).tpr1 = nnz( (Y(testset) ==1) & (results(ii).Yz(testset) >0) ) ./ nnz((Y(testset)==1));
-        results(ii).tpr2 = nnz( (Y(trainset)==1) & (results(ii).Yz(trainset)>0) ) ./ nnz((Y(trainset)==1));
-        results(ii).fpr1 = nnz( (Y(testset) ~=1) & (results(ii).Yz(testset) >0) ) ./ nnz((Y(testset)~=1));
-        results(ii).fpr2 = nnz( (Y(trainset)~=1) & (results(ii).Yz(trainset)>0) ) ./ nnz((Y(trainset)~=1));     
+        results(ii).Yz = Yz;
+        results(ii).tpr1 = nnz( (Y(testset) ==1) & (Yz(testset) >0) ) ./ nnz((Y(testset)==1));
+        results(ii).fpr1 = nnz( (Y(testset) ~=1) & (Yz(testset) >0) ) ./ nnz((Y(testset)~=1));
+        results(ii).tpr2 = nnz( (Y(trainset)==1) & (Yz(trainset)>0) ) ./ nnz((Y(trainset)==1));
+        results(ii).fpr2 = nnz( (Y(trainset)~=1) & (Yz(trainset)>0) ) ./ nnz((Y(trainset)~=1));     
         results(ii).nt1 = nnz((Y(testset) ==1));
         results(ii).nt2 = nnz((Y(trainset)==1));
         results(ii).nd1 = nnz((Y(testset) ~=1));
